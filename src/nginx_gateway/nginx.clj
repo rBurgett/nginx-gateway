@@ -63,8 +63,8 @@
   (let [https-routes (filter (fn [{ p :protocol }] (= p constants/protocol-https)) routes)
         by-port (group-by :entry-port https-routes)]
     (map (fn [[port rr]] (make-config [(ssl-preread-name-block rr)
-                                         (upstream-blocks rr)
-                                         (https-server-block port)])) (seq by-port))))
+                                       (upstream-blocks rr)
+                                       (https-server-block port)])) (seq by-port))))
 
 (defn generate-http-configs
   [routes]
