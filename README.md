@@ -1,2 +1,3 @@
-# nginx-tcp-proxy
-nginx-tcp-proxy
+# nginx-gateway
+
+nginx-gateway
