@@ -6,7 +6,7 @@
 
 (defn generate-nginx-route
   ([entry-domain entry-port destination-ip destination-port protocol]
-  (generate-nginx-route entry-domain entry-port destination-ip destination-port protocol (util/now) (util/generate-uuid)))
+   (generate-nginx-route entry-domain entry-port destination-ip destination-port protocol (util/now) (util/generate-uuid)))
   ([entry-domain entry-port destination-ip destination-port protocol date id]
    {:id id
     :entry-domain entry-domain
@@ -24,14 +24,14 @@
         data-file-exists (.exists f)]
     (when (not data-file-exists) (spit data-file (json/write-str [])))
     (reset! nginx-routes (->> (json/read-str (slurp data-file))
-                                       (map (fn [route] (generate-nginx-route
-                                                          (get route "entry-domain")
-                                                          (get route "entry-port")
-                                                          (get route "destination-ip")
-                                                          (get route "destination-port")
-                                                          (get route "protocol")
-                                                          (get route "date")
-                                                          (get route "id"))))))))
+                              (map (fn [route] (generate-nginx-route
+                                                 (get route "entry-domain")
+                                                 (get route "entry-port")
+                                                 (get route "destination-ip")
+                                                 (get route "destination-port")
+                                                 (get route "protocol")
+                                                 (get route "date")
+                                                 (get route "id"))))))))
 
 (defn get-nginx-routes
   []
@@ -43,7 +43,6 @@
     (spit data-file (with-out-str (json/pprint new-routes)))
     (nginx/clear-config-folder sites-enabled-dir)
     (nginx/write-all-configs sites-enabled-dir streams-enabled-dir new-routes)))
-    ;(nginx/write-configs sites-enabled-dir [(nginx/generate-http-configs new-routes)])))
 
 (defn delete-nginx-route!
   [data-file sites-enabled-dir streams-enabled-dir id]

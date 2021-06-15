@@ -29,11 +29,11 @@
   []
   [:form {:method "POST" :action "/add-route"}
    [:h3 {:class "text-center"} "Add New Route"]
-   [:p "Enter domain and IP pairs below. Wildcards are only acceptable in TCP/HTTP routes. Subdomains must be added separately from root domains."]
+   [:p "Enter domain and IP pairs below. Wildcards are only acceptable in TCP/HTTP routes. Subdomains must be added separately from root domains. Ranges can be added to entry domains using square brackets e.g. sub[0-2].mydomain.com will generate individual routes for sub0.mydomain.com, sub1.mydomain.com, and sub2.mydomain.com."]
    (flex-row
      [:div {:class "flex-grow-1"}
       [:label {:for "entry-domain"} "Entry Domain"]
-      [:input {:type "text" :name "entry-domain" :pattern "^[a-zA-Z0-9-.*]+\\.\\w+$" :required true :placeholder "e.g. mydomain.com"}]]
+      [:input {:type "text" :name "entry-domain" :pattern "^[[]a-zA-Z0-9-.*]+\\.\\w+$" :required true :placeholder "e.g. mydomain.com"}]]
      [:div {:class "flex-grow-1" :style "margin-right: 8px;"}
       [:label {:for "entry-port"} "Entry Port"]
       [:input {:type "number" :name "entry-port" :required true :placeholder "e.g. 443"}]])
@@ -136,26 +136,4 @@
                      constants/sites-enabled-dir
                      constants/streams-enabled-dir])
   (nginx-routes/load-routes constants/data-file)
-  ;(let [routes (nginx-routes/get-nginx-routes)]
-  ;  (println (nginx/make-config [(nginx/ssl-preread-name-block routes)
-  ;                      (nginx/upstream-blocks routes)
-  ;                      (nginx/server-block 443)])))
-
-  ;(nginx-gateway.nginx/write-configs
-  ;  nginx-dir
-  ;  (nginx-gateway.nginx/generate-https-configs (nginx-routes/get-nginx-routes))))
-
-  ;(nginx-gateway.nginx/clear-config-folder nginx-dir)
-  ;(nginx/write-configs nginx-dir (nginx/generate-all-configs (nginx-routes/get-nginx-routes))))
-  ;(nginx-gateway.nginx/write-configs
-  ;  nginx-dir
-  ;  (nginx-gateway.nginx/generate-http-configs (nginx-routes/get-nginx-routes))))
-  ;(println (nginx-gateway.nginx/generate-http-configs (nginx-routes/get-nginx-routes))))
-  ;(nginx-gateway.nginx/clear-config-folder nginx-dir)
-  ;(nginx-gateway.nginx/write-configs nginx-dir [(nginx/make-config [(nginx/http-server-block 80 "192.168.1.100" 3000 (nginx-routes/get-nginx-routes))])])
-
-  ;(println (nginx/make-config [(nginx/http-server-block 80 "192.168.1.100" 3000 (nginx-routes/get-nginx-routes))]))
-
-  ;(check-environmental-variables! [constants/nginx-dir-env-variable
-  ;                                 constants/nginx-docker-name-env-variable])
   (start-server 4000))

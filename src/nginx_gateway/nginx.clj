@@ -81,7 +81,29 @@
   [routes]
   (concat (generate-https-configs routes) (generate-http-configs routes)))
 
+(def range-patt #"\[(\d+)-(\d+)\]")
+
+(defn parse-route
+  [route]
+  (let [entry-domain (:entry-domain route)
+        matches (re-find (re-matcher range-patt entry-domain))
+        [_ num-str-1 num-str-2] (if matches matches [])
+        num1 (if num-str-1 (Integer/parseInt num-str-1))
+        num2 (if num-str-2 (Integer/parseInt num-str-2))]
+    (if (and matches (< num1 num2))
+      (->> (range num1 (inc num2))
+           (map (fn [n] (str/replace entry-domain range-patt (str n))))
+           (map (fn [new-entry-domain] (assoc route :entry-domain new-entry-domain))))
+      route)))
+
+(defn parse-routes
+  [routes]
+  (->> routes
+       (map #(parse-route %))
+       (flatten)))
+
 (defn write-all-configs
   [sites-enabled-dir streams-enabled-dir routes]
-  (write-configs sites-enabled-dir (generate-http-configs routes))
-  (write-configs streams-enabled-dir (generate-https-configs routes)))
+  (let [expanded-routes (parse-routes routes)]
+    (write-configs sites-enabled-dir (generate-http-configs expanded-routes))
+    (write-configs streams-enabled-dir (generate-https-configs expanded-routes))))
