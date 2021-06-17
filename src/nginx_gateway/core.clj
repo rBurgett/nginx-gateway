@@ -3,14 +3,14 @@
             [compojure.route :as route]
             [hiccup.page :refer [html5]]
             [nginx-gateway.constants :as constants]
+            [nginx-gateway.docker :as docker]
             [nginx-gateway.nginx-routes :as nginx-routes]
             [nginx-gateway.util :as util]
             [ring.adapter.jetty :refer [run-jetty]]
             [ring.middleware.params :refer [wrap-params]]
-            [ring.util.response :refer [redirect]])
+            [ring.util.response :refer [redirect]]
+            [nginx-gateway.nginx :as nginx])
   (:gen-class))
-
-;(def nginx-dir (System/getenv constants/nginx-dir-env-variable))
 
 (defn flex-row
   [& children]
@@ -136,4 +136,7 @@
                      constants/sites-enabled-dir
                      constants/streams-enabled-dir])
   (nginx-routes/load-routes constants/data-file)
-  (start-server 4000))
+  (let [[err success] (nginx/start constants/container-name constants/sites-enabled-dir constants/streams-enabled-dir)]
+    (if success (start-server 4000)
+                (do (println err)
+                    (System/exit 1)))))

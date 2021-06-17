@@ -3,9 +3,7 @@
 ; UI Strings
 (def site-name "NGINX Gateway")
 
-; Environmental variable names
-;(def nginx-dir-env-variable "NGINX_SITES_ENABLED_DIR")
-;(def nginx-docker-name-env-variable "NGINX_DOCKER_NAME")
+(def container-name "nginx-gateway")
 
 ; File paths
 (def data-dir (str (System/getProperty "user.home") "/.nginx-gateway"))

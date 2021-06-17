@@ -1,6 +1,7 @@
 (ns nginx-gateway.nginx
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
+            [nginx-gateway.docker :as docker]
             [nginx-gateway.constants :as constants]))
 
 (defn ssl-preread-name-block
@@ -107,3 +108,25 @@
   (let [expanded-routes (parse-routes routes)]
     (write-configs sites-enabled-dir (generate-http-configs expanded-routes))
     (write-configs streams-enabled-dir (generate-https-configs expanded-routes))))
+
+(defn start
+  [container-name sites-enabled-dir streams-enabled-dir]
+  (let [container-exists (docker/container-exists? container-name)
+        container-is-running (docker/container-is-running? container-name)]
+    (if container-exists
+      (if container-is-running
+        [nil true]
+        (let [{exit-code :exit err :err} (docker/start container-name)]
+          (if (= exit-code 0) [nil true] [err false])))
+      (let [{exit-code :exit err :err} (docker/run (format "-d --restart always -p 80:80 -p 443:443 -p 26656:26656/udp -v %s:/etc/nginx/sites-enabled -v %s:/etc/nginx/streams-enabled --name %s rburgett/docker-nginx-tcp-proxy:1.18.0.0" sites-enabled-dir streams-enabled-dir container-name))]
+        (if (= exit-code 0) [nil true] [err false])))))
+
+(defn test-config
+  [container-name]
+  (let [{exit-code :exit err :err} (docker/exec (format "%s nginx -t" container-name))]
+    (if (= exit-code 0) [nil true] [err false])))
+
+(defn reload-config
+  [container-name]
+  (let [{exit-code :exit err :err} (docker/exec (format "%s nginx -s reload" container-name))]
+    (if (= exit-code 0) [nil true] [err false])))
