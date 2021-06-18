@@ -9,6 +9,7 @@
             [ring.adapter.jetty :refer [run-jetty]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.util.response :refer [redirect]]
+            [ring.util.codec :refer [url-encode]]
             [nginx-gateway.nginx :as nginx])
   (:gen-class))
 
@@ -25,8 +26,16 @@
      [:link {:rel "stylesheet" :type "text/css" :href "/css/main.css"}]]
     [:body body]))
 
+(defn err-message
+  [message]
+  [:div {:style "text-align:center;color:#f00;"} (if message (str "Error: " message) "")])
+
+(defn info-message
+  [message]
+  [:div {:style "text-align:center;color:#0f0;"} message])
+
 (defn entry-form
-  []
+  [err message]
   [:form {:method "POST" :action "/add-route"}
    [:h3 {:class "text-center"} "Add New Route"]
    [:p "Enter domain and IP pairs below. Wildcards are only acceptable in TCP/HTTP routes. Subdomains must be added separately from root domains. Ranges can be added to entry domains using square brackets e.g. sub[0-2].mydomain.com will generate individual routes for sub0.mydomain.com, sub1.mydomain.com, and sub2.mydomain.com."]
@@ -52,7 +61,9 @@
        [:option {:value constants/protocol-https} (util/get-protocol-name constants/protocol-https)]
        [:option {:value constants/protocol-udp} (util/get-protocol-name constants/protocol-udp)]]]
      [:div {:class "flex-grow-1"}])
-    [:button {:type "submit"} "Save and apply new route"]])
+    [:button {:type "submit"} "Save and apply new route"]
+   (err-message err)
+   (info-message message)])
 
 (defn routes-table-row
   [{id :id date :date entry-domain :entry-domain  entry-port :entry-port destination-ip :destination-ip destination-port :destination-port protocol :protocol}]
@@ -67,9 +78,14 @@
     [:button {:form id} "X"]]])
 
 (defn routes-table
-  [routes]
+  [routes err message]
   [:div
-   [:h3 {:class "text-center"} "Active Routes"]
+   [:h3 {:class "text-center"}
+    [:span "Active Routes"]
+    [:form {:method "POST" :action "/reload-configs" :style "margin-top:0;margin-bottom:0;display:inline-block;border-width:0;"}
+     [:button {:type "submit" :title "Reload configs" :style "margin-top:0;margin-bottom:0;display:inline-block;margin-left:5px;"} "↻"]]]
+   (err-message err)
+   (info-message message)
    [:table {:style "margin-top: 8px;"}
     [:thead
      [:tr
@@ -87,11 +103,15 @@
     (map (fn [{id :id}] [:form {:id id :method "POST" :action (str "/delete-route/" id)}]) routes)]])
 
 (defn home
-  [routes]
-  [:div
-   [:h1 {:class "text-center"} constants/site-name]
-   (entry-form)
-   (routes-table routes)])
+  [routes params]
+  (let [err (get params "err")
+        message (get params "message")
+        adderr (get params "adderr")
+        addmessage (get params "addmessage")]
+    [:div
+     [:h1 {:class "text-center"} [:a {:href "/"} constants/site-name]]
+     (entry-form adderr addmessage)
+     (routes-table routes err message)]))
 
 (defn on-add-route
   [request]
@@ -108,10 +128,18 @@
   (nginx-routes/delete-nginx-route! constants/data-file constants/sites-enabled-dir constants/streams-enabled-dir (get-in request [:params :id]))
   (redirect "/" 302))
 
+(defn on-reload-route
+  []
+  (let [[err success] (nginx/test-reload-config constants/container-name)]
+    (if success (redirect (str "/?message=" (url-encode "Server reload completed successfully.")) 302)
+                (redirect (str "/?err=" (url-encode err)) 302))))
+
 (defroutes app
-           (GET "/" [] (scaffold constants/site-name (home (nginx-routes/get-nginx-routes))))
+           (GET "/" [] (wrap-params (fn [{params :params}]
+                                      (scaffold constants/site-name (home (nginx-routes/get-nginx-routes) params)))))
            (POST "/add-route" [] (wrap-params on-add-route))
            (POST "/delete-route/:id" [] (wrap-params on-delete-route))
+           (POST "/reload-configs" [] (wrap-params on-reload-route))
            (route/resources "/")
            (route/not-found "Not found."))
 

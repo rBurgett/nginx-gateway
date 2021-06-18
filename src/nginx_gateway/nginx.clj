@@ -130,3 +130,12 @@
   [container-name]
   (let [{exit-code :exit err :err} (docker/exec (format "%s nginx -s reload" container-name))]
     (if (= exit-code 0) [nil true] [err false])))
+
+(defn test-reload-config
+  [container-name]
+  (let [[err success] (test-config container-name)
+        [err1 success1] (if success (reload-config container-name) [])]
+    (cond success1 [nil true]
+          err1 [err1 false]
+          err [err false]
+          :else [nil false])))
