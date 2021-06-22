@@ -82,18 +82,19 @@
   [routes]
   (concat (generate-https-configs routes) (generate-http-configs routes)))
 
-(def range-patt #"\[(\d+)-(\d+)\]")
+(def range-patt #"\[(\d+)-(\d+)\s*,?\s*(\d*)\]")
 
 (defn parse-route
   [route]
   (let [entry-domain (:entry-domain route)
         matches (re-find (re-matcher range-patt entry-domain))
-        [_ num-str-1 num-str-2] (if matches matches [])
+        [_ num-str-1 num-str-2 num-len-str] (if matches matches [])
         num1 (if num-str-1 (Integer/parseInt num-str-1))
-        num2 (if num-str-2 (Integer/parseInt num-str-2))]
+        num2 (if num-str-2 (Integer/parseInt num-str-2))
+        num-len (if (> (count num-len-str) 0) num-len-str "1")]
     (if (and matches (< num1 num2))
       (->> (range num1 (inc num2))
-           (map (fn [n] (str/replace entry-domain range-patt (str n))))
+           (map (fn [n] (str/replace entry-domain range-patt (format (str "%0" num-len "d") n))))
            (map (fn [new-entry-domain] (assoc route :entry-domain new-entry-domain))))
       route)))
 

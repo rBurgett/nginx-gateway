@@ -38,7 +38,7 @@
   [err message]
   [:form {:method "POST" :action "/add-route"}
    [:h3 {:class "text-center"} "Add New Route"]
-   [:p "Enter domain and IP pairs below. Wildcards are only acceptable in TCP/HTTP routes. Subdomains must be added separately from root domains. Ranges can be added to entry domains using square brackets e.g. sub[0-2].mydomain.com will generate individual routes for sub0.mydomain.com, sub1.mydomain.com, and sub2.mydomain.com."]
+   [:p "Enter domain and IP pairs below. Wildcards are only acceptable in TCP/HTTP routes. Subdomains must be added separately from root domains. Ranges can be added to entry domains using square brackets e.g. sub[0-49].mydomain.com will generate individual routes for sub0.mydomain.com, sub1.mydomain.com, and sub2.mydomain.com. If you want want to force a number length by adding preceeding zeroes, you can add a third number within the brackets separated by a comma e.g. sub[0-49, 3].mydomain.com. That will generate routes for sub000.mydomain.com, sub001.mydomain.com, etc."]
    (flex-row
      [:div {:class "flex-grow-1"}
       [:label {:for "entry-domain"} "Entry Domain"]
@@ -129,7 +129,7 @@
   (redirect "/" 302))
 
 (defn on-reload-route
-  []
+  [request]
   (let [[err success] (nginx/test-reload-config constants/container-name)]
     (if success (redirect (str "/?message=" (url-encode "Server reload completed successfully.")) 302)
                 (redirect (str "/?err=" (url-encode err)) 302))))
